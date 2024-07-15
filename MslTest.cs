@@ -1,22 +1,19 @@
-
-using Microsoft.VisualBasic;
-using System.Collections.Generic;
 using System.Drawing;
 
 namespace MicrosoftLists
 {
     public class MslTest
     {
-
         [Fact]
         public void CreateListFromBlank()
         {
             var listName = "Test List";
             var description = "Test Description";
 
-            var result = new ListService().CreateBlankList(listName, description);
+            var list = new ListService().CreateBlankList(listName, description);
 
-            Assert.NotNull(result);
+            Assert.Equal(listName, list.Name);
+            Assert.Equal(description, list.Description);
         }
 
         [Fact]
@@ -40,18 +37,18 @@ namespace MicrosoftLists
             var listService = new ListService();
             var template = listService.GetTemplate()[0];
 
-            var result = new ListService().CreateListFromTemplate(template);
+            var list = new ListService().CreateListFromTemplate(template);
 
-            Assert.NotNull(result);
-            Assert.Equal(template.Name, result.Name);
-            Assert.Equal(template.Description, result.Description);
-            Assert.Equal(template.Columns.Count, result.Columns.Count);
-            Assert.Equal(template.Columns[0].Name, result.Columns[0].Name);
-            Assert.Equal(template.Columns[0].Type, result.Columns[0].Type);
+            Assert.NotNull(list);
+            Assert.Equal(template.Name, list.Name);
+            Assert.Equal(template.Description, list.Description);
+            Assert.Equal(template.Columns.Count, list.Columns.Count);
+            Assert.Equal(template.Columns[0].Name, list.Columns[0].Name);
+            Assert.Equal(template.Columns[0].Type, list.Columns[0].Type);
         }
 
         [Fact]
-        public void FavorList()
+        public void Test_FavorList()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -64,7 +61,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void DeleteList()
+        public void Test_DeleteList()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -74,31 +71,10 @@ namespace MicrosoftLists
             listService.DeleteList(list.Id);
 
             var deletedList = listService.GetList(list.Id);
-            Assert.Null(deletedList); // Ensure the list is deleted
+            Assert.Null(deletedList); 
         }
 
-        [Fact]
-        public void AddItem()
-        {
-            // Arrange
-            var listService = new ListService();
-            var listName = "Test List";
-            var description = "Test Description";
-            var list = listService.CreateBlankList(listName, description);
-
-            // Act
-            var commentContent = "This is a test comment.";
-            var itemTitle = "Test Item";
-            var comment = new Comment { Content = commentContent };
-            listService.AddItem(list.Id, new Item { Title = itemTitle, Comments = [comment] });
-
-            // Assert
-            var addedItem = list.Items.First(i => i.Title == itemTitle);
-            Assert.NotNull(addedItem);
-            Assert.Contains(addedItem.Comments, c => c.Content == commentContent);
-        }
-
-
+        //ADD COLUMNS
         [Fact]
         public void AddTextColumn()
         {
@@ -108,6 +84,7 @@ namespace MicrosoftLists
             var list = listService.CreateBlankList(listName, description);
 
             listService.AddColumn(list.Id, new TextColumn { Name = "Text Column" });
+
 
             Assert.Contains(list.Columns, c => c.Name == "Text Column" && c is TextColumn);
         }
@@ -204,11 +181,13 @@ namespace MicrosoftLists
             var list = listService.CreateBlankList(listName, description);
 
             listService.AddColumn(list.Id, new YesNoColumn { Name = "Yes/No Column", DefaultValue = true });
-
+            
             var column = list.Columns.First(c => c.Name == "Yes/No Column") as YesNoColumn;
             Assert.NotNull(column);
             Assert.True(column.DefaultValue);
         }
+
+      
 
         [Fact]
         public void AddHyperlinkColumn()
@@ -250,6 +229,8 @@ namespace MicrosoftLists
             var list = listService.CreateBlankList(listName, description);
 
             var lookupList = listService.CreateBlankList("Lookup List", "Lookup List Description");
+            listService.AddColumn(lookupList.Id, new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
+
             listService.AddColumn(list.Id, new LookupColumn { Name = "Lookup Column", ListID = lookupList.Id, ColumnID = lookupList.Columns[0].Id });
 
             var column = list.Columns.First(c => c.Name == "Lookup Column") as LookupColumn;
@@ -287,11 +268,31 @@ namespace MicrosoftLists
 
             ListService.HideColumn(column);
 
-            // Use null-conditional operator to access IsHidden property
             Assert.True(column?.IsHidden ?? false);
         }
 
+        [Fact]
+        public void AddItem()
+        {
+            // Arrange
+            var listService = new ListService();
+            var listName = "Test List";
+            var description = "Test Description";
+            var list = listService.CreateBlankList(listName, description);
 
+            // Act
+            var commentContent = "This is a test comment.";
+            var itemTitle = "Test Item";
+            var comment = new Comment { Content = commentContent };
+            listService.AddItem(list.Id, new Item { Title = itemTitle, Comments = [comment] });
+
+            // Assert
+            var addedItem = list.Items.First(i => i.Title == itemTitle);
+            Assert.NotNull(addedItem);
+            Assert.Contains(addedItem.Comments, c => c.Content == commentContent);
+        }
+
+        //TODO: add row vo column
         //
         //SERVICE LAYER
         //
@@ -310,6 +311,7 @@ namespace MicrosoftLists
 
             public ListService()
             {
+                //TODO: Doc tu` json
                 _templates =
                 [
                     new ListTemplate
@@ -318,8 +320,8 @@ namespace MicrosoftLists
                         Description = "Template Description 1",
                         Columns =
                         [
-                            new() { Name = "Column1", Type = "Text" },
-                            new() { Name = "Column2", Type = "Number" }
+                            new() { Name = "Column1" },
+                            new() { Name = "Column2" }
                         ],
                         Color = Color.LightBlue,
                         Icon = "TemplateIcon1",
@@ -331,8 +333,8 @@ namespace MicrosoftLists
                         Description = "Template Description 2",
                         Columns =
                         [
-                            new() { Name = "ColumnA", Type = "Choice" },
-                            new() { Name = "ColumnB", Type = "Date" }
+                            new() { Name = "ColumnA" },
+                            new() { Name = "ColumnB" }
                         ],
                         Color = Color.LightGreen,
                         Icon = "TemplateIcon2",
@@ -407,10 +409,10 @@ namespace MicrosoftLists
                 var listToRemove = _lists.First(l => l.Id == id);
                 _lists.Remove(listToRemove);
             }
-
+            //throw if null
             public List GetList(Guid id)
             {
-                return _lists?.Find(l => l.Id == id);
+                return _lists.Find(l => l.Id == id);
             }
 
 
@@ -438,103 +440,159 @@ namespace MicrosoftLists
             }
         }
     }
-
+    //TODO: type = enum
     public class Column
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty;
+        public ColumnType Type { get; set; } = ColumnType.Text;
         public string Description { get; set; } = string.Empty;
         public bool IsHidden { get; set; } = false;
     }
 
+    public enum ColumnType
+    {
+        Text,
+        Number,
+        Choice,
+        DateAndTime,
+        MultipleLinesOfText,
+        Person,
+        YesNo,
+        Hyperlink,
+        Image,
+        Lookup,
+        AverageRating
+    }
+
     public class PersonColumn : Column
     {
-        public new string Type { get; set; } = "Person";
         public string DefaultValue { get; set; } = string.Empty;
+        public bool ShowProfilePic { get; set; } = false;
 
-        public bool ShowProfilePic = false;
+        public PersonColumn()
+        {
+            Type = ColumnType.Person;
+        }
     }
+
 
     public class YesNoColumn : Column
     {
-        public new string Type { get; set; } = "Yes/No";
         public bool DefaultValue { get; set; } = false;
+
+        public YesNoColumn()
+        {
+            Type = ColumnType.YesNo;
+        }
     }
 
     public class HyperlinkColumn : Column
     {
-        public new string Type { get; set; } = "Hyperlink";
         public string DefaultValue { get; set; } = string.Empty;
+
+        public HyperlinkColumn()
+        {
+            Type = ColumnType.Hyperlink;
+        }
     }
 
     public class ImageColumn : Column
     {
-        public new string Type { get; set; } = "Image";
         public string DefaultValue { get; set; } = string.Empty;
+
+        public ImageColumn()
+        {
+            Type = ColumnType.Image;
+        }
     }
 
     public class LookupColumn : Column
     {
-        public new string Type { get; set; } = "Lookup";
         public Guid ListID { get; set; }
         public Guid ColumnID { get; set; }
+
+        public LookupColumn()
+        {
+            Type = ColumnType.Lookup;
+        }
     }
 
     public class AverageRatingColumn : Column
     {
-        public new string Type { get; set; } = "Average Rating";
         public List<double> Ratings { get; set; } = [];
+
+        public AverageRatingColumn()
+        {
+            Type = ColumnType.AverageRating;
+        }
 
         public double GetAverageRating()
         {
             return Ratings.Average();
         }
-        
     }
 
     public class MultipleLinesOfTextColumn : Column
     {
-        public new string Type { get; set; } = "Multiple lines of text";
         public string DefaultValue { get; set; } = string.Empty;
+
+        public MultipleLinesOfTextColumn()
+        {
+            Type = ColumnType.MultipleLinesOfText;
+        }
     }
 
     public class TextColumn : Column
     {
-        public new string Type { get; set; } = "Text";
         public string DefaultValue { get; set; } = string.Empty;
+        public bool CalculatedValue { get; set; } = false;
+        public bool AtoZFilter { get; set; } = false;
+        public bool ZtoAFilter { get; set; } = false;
 
-        public bool CalculatedValue = false;
-
-        public bool AtoZFilter = false;
-
-        public bool ZtoAFilter = false;
+        public TextColumn()
+        {
+            Type = ColumnType.Text;
+        }
     }
 
     public class NumberColumn : Column
     {
-        public new string Type { get; set; } = "Number";
         public double DefaultValue { get; set; } = 0.0;
+
+        public NumberColumn()
+        {
+            Type = ColumnType.Number;
+        }
     }
 
     public class ChoiceColumn : Column
     {
-        public new string Type { get; set; } = "Choice";
         public List<Choice> Choices { get; set; } =
         [
-            new() { Name = "Choice 1", Color = Color.Blue },
-            new() { Name = "Choice 2", Color = Color.Green },
-            new() { Name = "Choice 3", Color = Color.Yellow }
+            new Choice { Name = "Choice 1", Color = Color.Blue },
+        new Choice { Name = "Choice 2", Color = Color.Green },
+        new Choice { Name = "Choice 3", Color = Color.Yellow }
         ];
         public string DefaultValue { get; set; } = string.Empty;
         public bool AddValuesManually { get; set; } = false;
+
+        public ChoiceColumn()
+        {
+            Type = ColumnType.Choice;
+        }
     }
 
     public class DateColumn : Column
     {
-        public new string Type { get; set; } = "Date and time";
         public DateTime DefaultValue { get; set; } = DateTime.Now;
+
+        public DateColumn()
+        {
+            Type = ColumnType.DateAndTime;
+        }
     }
+
 
     public class Choice
     {
