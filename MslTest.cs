@@ -1,38 +1,42 @@
+﻿using Microsoft.VisualBasic;
+using System.ComponentModel.DataAnnotations;
 using System.Drawing;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace MicrosoftLists
 {
     public class MslTest
     {
-        [Fact]
-        public void CreateListFromBlank()
+        public static List GetBlankList()
         {
             var listName = "Test List";
             var description = "Test Description";
 
             var list = new ListService().CreateBlankList(listName, description);
-
-            Assert.Equal(listName, list.Name);
-            Assert.Equal(description, list.Description);
+            return list;
         }
 
         [Fact]
-        public void CreateListFromExisting()
+        public void Test_CreateListFromBlank()
         {
-            var listName = "Test List";
-            var description = "Test Description";
+            var list = GetBlankList();
 
-            var firstList = new ListService().CreateBlankList(listName, description);
-
-            var secondList = new ListService().CreateFromExistingList(firstList);
-
-            Assert.Equal(firstList.Name, secondList.Name);
-            Assert.Equal(firstList.Description, secondList.Description);
-            Assert.Equal(firstList.Columns.Count, secondList.Columns.Count);
+            Assert.NotNull(list);
         }
 
         [Fact]
-        public void CreateListFromTemplate()
+        public void Test_CreateListFromExisting()
+        {
+            var secondList = new ListService().CreateFromExistingList(GetBlankList());
+
+            Assert.Equal(GetBlankList().Name, secondList.Name);
+            Assert.Equal(GetBlankList().Description, secondList.Description);
+            Assert.Equal(GetBlankList().Columns.Count, secondList.Columns.Count);
+        }
+
+        [Fact]
+        public void Test_CreateListFromTemplate()
         {
             var listService = new ListService();
             var template = listService.GetTemplate()[0];
@@ -76,7 +80,7 @@ namespace MicrosoftLists
 
         //ADD COLUMNS
         [Fact]
-        public void AddTextColumn()
+        public void Test_AddTextColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -90,7 +94,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddNumberColumn()
+        public void Test_AddNumberColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -105,7 +109,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddChoiceColumn()
+        public void Test_AddChoiceColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -127,7 +131,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddDateAndTimeColumn()
+        public void Test_AddDateAndTimeColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -143,7 +147,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddMultipleLinesOfTextColumn()
+        public void Test_AddMultipleLinesOfTextColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -158,7 +162,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddPersonColumn()
+        public void Test_AddPersonColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -173,7 +177,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddYesNoColumn()
+        public void Test_AddYesNoColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -190,7 +194,7 @@ namespace MicrosoftLists
       
 
         [Fact]
-        public void AddHyperlinkColumn()
+        public void Test_AddHyperlinkColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -206,7 +210,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddImageColumn()
+        public void Test_AddImageColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -221,7 +225,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddLookupColumn()
+        public void Test_AddLookupColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -229,7 +233,6 @@ namespace MicrosoftLists
             var list = listService.CreateBlankList(listName, description);
 
             var lookupList = listService.CreateBlankList("Lookup List", "Lookup List Description");
-            listService.AddColumn(lookupList.Id, new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
 
             listService.AddColumn(list.Id, new LookupColumn { Name = "Lookup Column", ListID = lookupList.Id, ColumnID = lookupList.Columns[0].Id });
 
@@ -240,7 +243,7 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddAverageRatingColumn()
+        public void Test_AddAverageRatingColumn()
         {
             var listService = new ListService();
             var listName = "Test List";
@@ -272,7 +275,23 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void AddItem()
+        public void Test_AddMultipleCols()
+        {
+            var listService = new ListService();
+            var list = GetBlankList();
+
+            listService.AddColumn(list.Id, new AverageRatingColumn { Name = "Average Rating Column", Ratings = [4.0] });
+
+            listService.AddColumn(list.Id, new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
+
+            var column = list.Columns.First(c => c.Name == "Average Rating Column") as AverageRatingColumn;
+            ListService.HideColumn(column);
+
+            Assert.True(column?.IsHidden ?? false);
+        }
+
+        [Fact]
+        public void Test_AddItem()
         {
             // Arrange
             var listService = new ListService();
@@ -292,7 +311,7 @@ namespace MicrosoftLists
             Assert.Contains(addedItem.Comments, c => c.Content == commentContent);
         }
 
-        //TODO: add row vo column
+       
         //
         //SERVICE LAYER
         //
@@ -311,40 +330,17 @@ namespace MicrosoftLists
 
             public ListService()
             {
-                //TODO: Doc tu` json
-                _templates =
-                [
-                    new ListTemplate
-                    {
-                        Name = "Template1",
-                        Description = "Template Description 1",
-                        Columns =
-                        [
-                            new() { Name = "Column1" },
-                            new() { Name = "Column2" }
-                        ],
-                        Color = Color.LightBlue,
-                        Icon = "TemplateIcon1",
-                        Items = []
-                    },
-                    new ListTemplate
-                    {
-                        Name = "Template2",
-                        Description = "Template Description 2",
-                        Columns =
-                        [
-                            new() { Name = "ColumnA" },
-                            new() { Name = "ColumnB" }
-                        ],
-                        Color = Color.LightGreen,
-                        Icon = "TemplateIcon2",
-                        Items = []
-                    }
-                ];
-
+                _templates = LoadTemplatesFromJson(MsLConstant.FilePath);
                 _lists = [];
             }
-            public List CreateBlankList(string listName, string description)
+
+            public static List<ListTemplate>? LoadTemplatesFromJson(string filePath)
+            {
+                var json = File.ReadAllText(filePath);
+                return JsonSerializer.Deserialize<List<ListTemplate>>(json);
+            }
+
+            public List CreateBlankList(string listName, string description, Color color, string icon)
             {
                 var newList = new List
                 {
@@ -352,14 +348,18 @@ namespace MicrosoftLists
                     Name = listName,
                     Description = description,
                     Columns = [],
-                    Color = Color.White,
-                    Icon = "Smile",
+                    Color = color,
+                    Icon = icon,
                     Items = []
                 };
-
                 _lists.Add(newList);
 
                 return newList;
+            }
+
+            public List CreateBlankList(string listName, string description)
+            {
+                return CreateBlankList(listName, description, Color.White, "🌟");
             }
 
 
@@ -415,7 +415,6 @@ namespace MicrosoftLists
                 return _lists.Find(l => l.Id == id);
             }
 
-
             public void FavorList(Guid id)
             {
                 var listToRemove = _lists.First(l => l.Id == id);
@@ -440,12 +439,18 @@ namespace MicrosoftLists
             }
         }
     }
-    //TODO: type = enum
+
+    public static class MsLConstant
+    {
+        public const string FilePath = "C:\\Users\\thinh\\source\\repos\\MicrosoftLists\\templates.json";
+    }
+
     public class Column
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = string.Empty;
         public ColumnType Type { get; set; } = ColumnType.Text;
+        public string Value { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public bool IsHidden { get; set; } = false;
     }

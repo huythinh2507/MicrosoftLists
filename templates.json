@@ -1,0 +1,50 @@
+[
+  {
+    "Name": "Template1",
+    "Description": "Template Description 1",
+    "Columns": [
+      {
+        "Name": "Column1",
+        "Description": "",
+        "IsHidden": false
+      },
+      {
+        "Name": "Column2",
+        "Description": "",
+        "IsHidden": false
+      }
+    ],
+    "Icon": "TemplateIcon1",
+    "Items": [],
+    "IsFavorited": false,
+    "IsGridView": false,
+    "IsShared": false,
+    "IsExported": false,
+    "Undo": false,
+    "Redo": false
+  },
+  {
+    "Name": "Template2",
+    "Description": "Template Description 2",
+    "Columns": [
+      {
+        "Name": "ColumnA",
+        "Description": "",
+        "IsHidden": false
+      },
+      {
+        "Name": "ColumnB",
+        "Description": "",
+        "IsHidden": false
+      }
+    ],
+    "Icon": "TemplateIcon2",
+    "Items": [],
+    "IsFavorited": false,
+    "IsGridView": false,
+    "IsShared": false,
+    "IsExported": false,
+    "Undo": false,
+    "Redo": false
+  }
+]
