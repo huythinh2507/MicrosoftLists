@@ -778,33 +778,36 @@ namespace MicrosoftLists
 
             public void MoveColumnLeft(int columnIndex)
             {
-                if (columnIndex > 0 && columnIndex < Columns.Count)
-                {
-                    // Swap columns
-                    (Columns[columnIndex - 1], Columns[columnIndex]) = (Columns[columnIndex], Columns[columnIndex - 1]);
+                // Ensure columnIndex is within valid bounds
+                columnIndex = Math.Max(columnIndex, 1);
+                columnIndex = Math.Min(columnIndex, Columns.Count - 1);
 
-                    // Update rows
-                    foreach (var row in Rows)
-                    {
-                        (row.Cells[columnIndex - 1], row.Cells[columnIndex]) = (row.Cells[columnIndex], row.Cells[columnIndex - 1]);
-                    }
+                // Swap columns
+                (Columns[columnIndex - 1], Columns[columnIndex]) = (Columns[columnIndex], Columns[columnIndex - 1]);
+
+                // Update rows
+                foreach (var row in Rows)
+                {
+                    (row.Cells[columnIndex - 1], row.Cells[columnIndex]) = (row.Cells[columnIndex], row.Cells[columnIndex - 1]);
                 }
             }
 
             public void MoveColumnRight(int index)
             {
-                if (index >= 0 && index < Columns.Count - 1)
-                {
-                    // Swap columns
-                    (Columns[index + 1], Columns[index]) = (Columns[index], Columns[index + 1]);
+                // Ensure index is within valid bounds
+                index = Math.Max(index, 0);
+                index = Math.Min(index, Columns.Count - 2);
 
-                    // Update rows
-                    foreach (var row in Rows)
-                    {
-                        (row.Cells[index + 1], row.Cells[index]) = (row.Cells[index], row.Cells[index + 1]);
-                    }
+                // Swap columns
+                (Columns[index + 1], Columns[index]) = (Columns[index], Columns[index + 1]);
+
+                // Update rows
+                foreach (var row in Rows)
+                {
+                    (row.Cells[index + 1], row.Cells[index]) = (row.Cells[index], row.Cells[index + 1]);
                 }
             }
+
 
             public class Row
             {
@@ -820,70 +823,68 @@ namespace MicrosoftLists
 
         private static readonly Dictionary<ColumnType, Func<object, object>> ValueConverters = new()
         {
-            { ColumnType.Text, value => value?.ToString() ?? string.Empty },
-            { ColumnType.Number, value =>
-                {
-                    if (value is double v)
-                        return v;
+            // Text Column Type
+            [ColumnType.Text] = value => value?.ToString() ?? string.Empty,
 
-                    if (double.TryParse(value?.ToString(), out double d))
-                        return d;
-
-                    throw new ArgumentException("Invalid value for Number column");
-                }
+            // Number Column Type
+            [ColumnType.Number] = value => value switch
+            {
+                double v => v,
+                string s when double.TryParse(s, out double d) => d,
+                _ => throw new ArgumentException("Invalid value for Number column")
             },
-            { ColumnType.Choice, value => value?.ToString() ?? string.Empty },
-            { ColumnType.DateAndTime, value =>
-                {
-                    if (value is DateTime time)
-                        return time;
 
-                    if (DateTime.TryParse(value?.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
-                        return dt;
+            // Choice Column Type
+            [ColumnType.Choice] = value => value?.ToString() ?? string.Empty,
 
-                    throw new ArgumentException("Invalid value for Date and Time column");
-                }
+            // Date and Time Column Type
+            [ColumnType.DateAndTime] = value => value switch
+            {
+                DateTime time => time,
+                string s when DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt) => dt,
+                _ => throw new ArgumentException("Invalid value for Date and Time column")
             },
-            { ColumnType.MultipleLinesOfText, value => value?.ToString() ?? string.Empty },
-            { ColumnType.Person, value => value?.ToString() ?? string.Empty },
-            { ColumnType.YesNo, value =>
-                {
-                    if (value is bool v)
-                        return v;
 
-                    if (bool.TryParse(value?.ToString(), out bool b))
-                        return b;
+            // Multiple Lines of Text Column Type
+            [ColumnType.MultipleLinesOfText] = value => value?.ToString() ?? string.Empty,
 
-                    throw new ArgumentException("Invalid value for Yes/No column");
-                }
+            // Person Column Type
+            [ColumnType.Person] = value => value?.ToString() ?? string.Empty,
+
+            // Yes/No Column Type
+            [ColumnType.YesNo] = value => value switch
+            {
+                bool v => v,
+                string s when bool.TryParse(s, out bool b) => b,
+                _ => throw new ArgumentException("Invalid value for Yes/No column")
             },
-            { ColumnType.Hyperlink, value => value?.ToString() ?? string.Empty },
-            { ColumnType.Image, value => value?.ToString() ?? string.Empty },
-            { ColumnType.Lookup, value => value },
-            { ColumnType.AverageRating, value =>
-                {
-                    if (value is double v)
-                        return v;
 
-                    if (double.TryParse(value?.ToString(), out double ar))
-                        return ar;
+            // Hyperlink Column Type
+            [ColumnType.Hyperlink] = value => value?.ToString() ?? string.Empty,
 
-                    throw new ArgumentException("Invalid value for Average Rating column");
-                }
+            // Image Column Type
+            [ColumnType.Image] = value => value?.ToString() ?? string.Empty,
+
+            // Lookup Column Type (no conversion needed)
+            [ColumnType.Lookup] = value => value,
+
+            // Average Rating Column Type
+            [ColumnType.AverageRating] = value => value switch
+            {
+                double v => v,
+                string s when double.TryParse(s, out double ar) => ar,
+                _ => throw new ArgumentException("Invalid value for Average Rating column")
             }
         };
 
+
         public void SetValue(object value)
         {
-            if (ValueConverters.TryGetValue(ColumnType, out var converter))
-            {
-                Value = converter(value);
-            }
-            else
-            {
-                throw new ArgumentException("Unsupported column type");
-            }
+            Value = ValueConverters.TryGetValue(ColumnType, out var converter)
+                ? converter(value)
+                : throw new ArgumentException("Unsupported column type");
         }
+
     }
 }
 
