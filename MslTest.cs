@@ -1,14 +1,9 @@
-﻿using Microsoft.VisualBasic;
-using System.ComponentModel.DataAnnotations;
-using System.Data;
+﻿using System.Data;
 using System.Drawing;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Linq;
-using System;
-using Xunit.Sdk;
-using static MicrosoftLists.MslTest;
 using System.Globalization;
+using System.Text.Json;
+using static MicrosoftLists.MslTest;
+using static MicrosoftLists.MslTest.List;
 
 namespace MicrosoftLists
 {
@@ -54,7 +49,7 @@ namespace MicrosoftLists
             Assert.Equal(newL.Columns.Count, list.Columns.Count);
             Assert.Equal(newL.Rows[0].Cells.Count, list.Rows[0].Cells.Count);
         }
-          
+
         [Fact]
         public void Test_CreateListFromTemplate()
         {
@@ -325,76 +320,130 @@ namespace MicrosoftLists
             list.AddCol(new AverageRatingColumn { Name = "Average Rating Column", Ratings = [4.0] });
             list.AddCol(new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
 
-            list.AddRow();
-            list.AddRow();
+            // Add a row with specific values
+            list.AddRow(3.5, "image1.jpg", 4.0, "image2.jpg");
+            list.AddRow(4.0, "image3.jpg", 4.5, "image4.jpg");
 
-            var noRows = list.Rows.Count;
-            var noCells = list.Rows[0].Cells.Count;
+            Assert.Equal(3.5, list.Columns[0].CellValues[0]);
 
-            Assert.Equal(2, noRows);
-            Assert.Equal(4, noCells);
-
-            list.AddCol(new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
-            var newNoCells = list.Rows[0].Cells.Count;
-
-            Assert.Equal(4 + 1, newNoCells);
-        }
-
-        [Fact]
-        public void Test_SetCellValue()
-        {
-            var list = GetBlankList();
+            Assert.Equal(3.5, list.Rows[0].Cells[0].Value);
 
             list.AddCol(new AverageRatingColumn { Name = "Average Rating Column", Ratings = [4.0] });
             list.AddCol(new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
             list.AddCol(new AverageRatingColumn { Name = "Average Rating Column", Ratings = [4.0] });
             list.AddCol(new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
 
-            list.AddRow();
-            list.AddRow();
+            list.AddRow(3.5, "image1.jpg", 4.0, "image2.jpg", 3.5, "image1.jpg", 4.0, "image2.jpg");
 
-            //wrong setting
-            void setValueAction() => list.Rows[0].Cells[0].SetValue("image.png");
-
-            Assert.Throws<ArgumentException>(setValueAction);
+            Assert.Equal(3.5, list.Rows[0].Cells[0].Value);
         }
 
         [Fact]
-        public void Test_MoveColRight()
+        public void Test_MoveRightCol()
         {
             var list = GetBlankList();
+            var url = "http://example.com";
 
-            list.AddCol(new AverageRatingColumn { Name = "Average Rating Column 1", Ratings = [4.0] });
-            list.AddCol(new ImageColumn { Name = "Image Column 1", DefaultValue = "image.jpg" });
-            list.AddCol(new AverageRatingColumn { Name = "Average Rating Column 2", Ratings = [4.0] });
-            list.AddCol(new ImageColumn { Name = "Image Column 2", DefaultValue = "image.jpg" });
+            list.AddCol(new HyperlinkColumn { Name = "Hyperlink Column", DefaultValue = url });
+            list.AddCol(new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
+            list.AddCol(new AverageRatingColumn { Name = "Average Rating Column", Ratings = [4.0] });
+            list.AddCol(new YesNoColumn { Name = "Yes/No Column", DefaultValue = true });
 
-            list.AddRow();
-            list.AddRow();
+            // Add a row with specific values
+            list.AddRow(3.5, "image1.jpg", 4.0, "image2.jpg");
+            list.AddRow(4.0, "image3.jpg", 4.5, "image4.jpg");
 
-            // Initial positions
-            Assert.Equal("Average Rating Column 1", list.Columns[0].Name);
-            Assert.Equal("Image Column 1", list.Columns[1].Name);
-            Assert.Equal("Average Rating Column 2", list.Columns[2].Name);
-            Assert.Equal("Image Column 2", list.Columns[3].Name);
+            list.Columns[0].MoveRight();
+            Assert.Equal("Hyperlink Column", list.Columns[1].Name);
 
-            // Move second column right
             list.Columns[1].MoveRight();
+            Assert.Equal("Hyperlink Column", list.Columns[1 + 1].Name);
+        }
 
-            // New positions
-            Assert.Equal("Average Rating Column 1", list.Columns[0].Name);
-            Assert.Equal("Average Rating Column 2", list.Columns[1].Name);
-            Assert.Equal("Image Column 1", list.Columns[2].Name);
-            Assert.Equal("Image Column 2", list.Columns[3].Name);
+        [Fact]
+        public void Test_MoveLeftCol()
+        {
+            var list = GetBlankList();
+            var url = "http://example.com";
 
-            // Move third column left
-            list.Columns[2].MoveLeft();
+            list.AddCol(new HyperlinkColumn { Name = "Hyperlink Column", DefaultValue = url });
+            list.AddCol(new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
+            list.AddCol(new AverageRatingColumn { Name = "Average Rating Column", Ratings = [4.0] });
+            list.AddCol(new YesNoColumn { Name = "Yes/No Column", DefaultValue = true });
 
-            // New positions
-            Assert.Equal("Average Rating Column 1", list.Columns[0].Name);
-            Assert.Equal("Image Column 1", list.Columns[1].Name);
-            Assert.Equal("Average Rating Column 2", list.Columns[2].Name);
-            Assert.Equal("Image Column 2", list.Columns[3].Name);
+            // Add a row with specific values
+            list.AddRow(3.5, "image1.jpg", 4.0, "image2.jpg");
+            list.AddRow(4.0, "image3.jpg", 4.5, "image4.jpg");
+
+            list.Columns[0].MoveLeft();
+            Assert.Equal("Hyperlink Column", list.Columns[0].Name);
+
+            list.Columns[1].MoveLeft();
+            Assert.Equal("Hyperlink Column", list.Columns[1].Name);
+            Assert.Equal("Image Column", list.Columns[0].Name);
+        }
+
+        [Fact]
+        public void Test_HideCol()
+        {
+            var list = GetBlankList();
+            var url = "http://example.com";
+
+            list.AddCol(new HyperlinkColumn { Name = "Hyperlink Column", DefaultValue = url });
+            list.AddCol(new ImageColumn { Name = "Image Column", DefaultValue = "image.jpg" });
+            list.AddCol(new AverageRatingColumn { Name = "Average Rating Column", Ratings = [4.0] });
+            list.AddCol(new YesNoColumn { Name = "Yes/No Column", DefaultValue = true });
+
+            list.Columns[0].Hide();
+
+            Assert.True(list.Columns[0].IsHidden);
+        }
+
+        [Fact]
+        public void Test_ColFilterByAtoZ()
+        {
+            var list = GetBlankList();
+
+            list.AddCol(new TextColumn { Name = "Text Column" });
+
+            list.AddRow("b");
+            list.AddRow("a");
+            list.AddRow("d");
+            list.AddRow("e");
+            list.AddRow("c");
+
+            list.Columns[0].AtoZ();
+            var result = new List<object> { "a", "b", "c", "d", "e" };
+            Assert.Equal(result, list.Columns[0].CellValues);
+
+            list.Columns[0].ZtoA();
+            var result1 = new List<object> { "e", "d", "c", "b", "a" };
+            Assert.Equal(result1, list.Columns[0].CellValues);
+        }
+
+        [Fact]
+        public void Test_SearchFunction()
+        {
+            var list = GetBlankList();
+
+            list.AddCol(new TextColumn { Name = "Text Column" });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            list.AddRow("Harry Kane", 21);
+            list.AddRow("Lebron James", 23);
+            list.AddRow("Kevin Durant", 13);
+            list.AddRow("Anthony Edwards", 11);
+            list.AddRow("Stephen Curry", 30);
+
+            var searchValue = "Harry";
+            var searchResults = list.Search(searchValue);
+
+            Assert.Contains(searchResults, row => row.Cells.Exists(cell =>
+            {
+                var cellValue = cell.Value?.ToString();
+                return cellValue != null && cellValue.Contains(searchValue, StringComparison.OrdinalIgnoreCase);
+
+            }));
         }
 
         //
@@ -516,19 +565,13 @@ namespace MicrosoftLists
                 listToRemove.IsFavorited = true;
             }
 
-            public static void HideColumn(Column column)
-            {
-                ArgumentNullException.ThrowIfNull(column);
-                column.IsHidden = true;
-            }
-
-
         }
 
         public static class MsLConstant
         {
             public const int DefaultColWidth = 10;
             public const string FilePath = "C:\\Users\\thinh\\source\\repos\\MicrosoftLists\\templates.json";
+            public const int WidthIncrement = 2;
         }
 
         public class Column
@@ -536,7 +579,7 @@ namespace MicrosoftLists
             public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
             public ColumnType Type { get; set; } = ColumnType.Text;
-            public string Value { get; set; } = string.Empty;
+            public List<object> CellValues { get; set; } = [];
             public string Description { get; set; } = string.Empty;
             public bool IsHidden { get; set; } = false;
 
@@ -550,12 +593,12 @@ namespace MicrosoftLists
 
             public void Widen()
             {
-                Width += 2;
+                Width += MsLConstant.WidthIncrement;
             }
 
             public void Narrow()
             {
-                Width = Math.Max(Width - 2, MsLConstant.DefaultColWidth);
+                Width = Math.Max(Width - MsLConstant.WidthIncrement, MsLConstant.DefaultColWidth);
             }
 
             public void Rename(string newName)
@@ -566,20 +609,48 @@ namespace MicrosoftLists
             public void MoveRight()
             {
                 int index = ParentList.Columns.IndexOf(this);
-                if (index < ParentList.Columns.Count - 1)
-                {
-                    ParentList.MoveColumnRight(index);
-                }
+                ParentList.MoveColumnRight(index);
             }
 
             public void MoveLeft()
             {
                 int index = ParentList.Columns.IndexOf(this);
-                if (index > 0)
-                {
-                    ParentList.MoveColumnLeft(index);
-                }
+                ParentList.MoveColumnLeft(index);
             }
+
+            public void AddCellValue(object value)
+            {
+                CellValues.Add(value);
+            }
+
+            public void AtoZ()
+            {
+                var sortedValues = CellValues.OfType<string>()
+                                             .OrderBy(val => val, StringComparer.Ordinal)
+                                             .Cast<object>()
+                                             .ToList();
+
+                UpdateCellValues(sortedValues);
+            }
+
+            public void ZtoA()
+            {
+                var sortedValues = CellValues.OfType<string>()
+                                             .OrderByDescending(val => val, StringComparer.Ordinal)
+                                             .Cast<object>()
+                                             .ToList();
+
+                UpdateCellValues(sortedValues);
+            }
+
+            private void UpdateCellValues(List<object> sortedValues)
+            {
+                int sortedIndex = 0;
+                CellValues = CellValues.Select(val => val is string ? sortedValues[sortedIndex++] : val).ToList();
+            }
+
+
+
         }
 
         public enum ColumnType
@@ -638,7 +709,7 @@ namespace MicrosoftLists
                 Type = ColumnType.Image;
             }
 
-            
+
         }
 
         public class LookupColumn : Column
@@ -730,6 +801,7 @@ namespace MicrosoftLists
 
         public class Choice
         {
+            public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
             public Color Color { get; set; }
         }
@@ -755,7 +827,7 @@ namespace MicrosoftLists
             {
                 col.ParentList = this;
                 Columns.Add(col);
-                
+
                 // Update existing rows to match the new column count
                 foreach (var row in Rows)
                 {
@@ -766,31 +838,47 @@ namespace MicrosoftLists
                 }
             }
 
-            public void AddRow()
+            public void AddRow(params object[] values)
             {
-                var newRow = new Row();
-                newRow.Cells.AddRange(Columns.Select(column => new Cell()
+                if (values.Length != Columns.Count)
                 {
-                    ColumnType = column.Type,
-                }));
+                    throw new ArgumentException("Number of values must match the number of columns.");
+                }
+
+                var newRow = new Row();
+                int index = 0;
+                foreach (var value in values)
+                {
+                    var column = Columns[index];
+                    var cell = new Cell
+                    {
+                        ColumnType = column.Type,
+                        Value = value
+                    };
+                    newRow.Cells.Add(cell);
+                    column.AddCellValue(value);
+                    index++;
+                }
+
                 Rows.Add(newRow);
             }
 
-            public void MoveColumnLeft(int columnIndex)
+
+            public void MoveColumnLeft(int index)
             {
-                // Ensure columnIndex is within valid bounds
-                columnIndex = Math.Max(columnIndex, 1);
-                columnIndex = Math.Min(columnIndex, Columns.Count - 1);
+                // Ensure index is within valid bounds
+                if (index <= 0 || index >= Columns.Count) return;
 
                 // Swap columns
-                (Columns[columnIndex - 1], Columns[columnIndex]) = (Columns[columnIndex], Columns[columnIndex - 1]);
+                (Columns[index - 1], Columns[index]) = (Columns[index], Columns[index - 1]);
 
                 // Update rows
                 foreach (var row in Rows)
                 {
-                    (row.Cells[columnIndex - 1], row.Cells[columnIndex]) = (row.Cells[columnIndex], row.Cells[columnIndex - 1]);
+                    (row.Cells[index - 1], row.Cells[index]) = (row.Cells[index], row.Cells[index - 1]);
                 }
             }
+
 
             public void MoveColumnRight(int index)
             {
@@ -808,6 +896,15 @@ namespace MicrosoftLists
                 }
             }
 
+            public List<Row> Search(string query)
+            {
+                return Rows.Where(row => row.Cells.Exists(cell =>
+                {
+                    var cellValue = cell.Value?.ToString();
+                    return cellValue != null && cellValue.Contains(query, StringComparison.OrdinalIgnoreCase);
+                })).ToList();
+            }
+
 
             public class Row
             {
@@ -821,62 +918,50 @@ namespace MicrosoftLists
         public object Value { get; set; } = string.Empty;
         public ColumnType ColumnType { get; set; }
 
-        private static readonly Dictionary<ColumnType, Func<object, object>> ValueConverters = new()
+        private readonly static Dictionary<ColumnType, Func<object, object>> ValueConverters = new()
         {
-            // Text Column Type
-            [ColumnType.Text] = value => value?.ToString() ?? string.Empty,
-
-            // Number Column Type
-            [ColumnType.Number] = value => value switch
-            {
-                double v => v,
-                string s when double.TryParse(s, out double d) => d,
-                _ => throw new ArgumentException("Invalid value for Number column")
-            },
-
-            // Choice Column Type
-            [ColumnType.Choice] = value => value?.ToString() ?? string.Empty,
-
-            // Date and Time Column Type
-            [ColumnType.DateAndTime] = value => value switch
-            {
-                DateTime time => time,
-                string s when DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt) => dt,
-                _ => throw new ArgumentException("Invalid value for Date and Time column")
-            },
-
-            // Multiple Lines of Text Column Type
-            [ColumnType.MultipleLinesOfText] = value => value?.ToString() ?? string.Empty,
-
-            // Person Column Type
-            [ColumnType.Person] = value => value?.ToString() ?? string.Empty,
-
-            // Yes/No Column Type
-            [ColumnType.YesNo] = value => value switch
-            {
-                bool v => v,
-                string s when bool.TryParse(s, out bool b) => b,
-                _ => throw new ArgumentException("Invalid value for Yes/No column")
-            },
-
-            // Hyperlink Column Type
-            [ColumnType.Hyperlink] = value => value?.ToString() ?? string.Empty,
-
-            // Image Column Type
-            [ColumnType.Image] = value => value?.ToString() ?? string.Empty,
-
-            // Lookup Column Type (no conversion needed)
+            [ColumnType.Text] = ConvertToString,
+            [ColumnType.Number] = ConvertToNumber,
+            [ColumnType.Choice] = ConvertToString,
+            [ColumnType.DateAndTime] = ConvertToDateTime,
+            [ColumnType.MultipleLinesOfText] = ConvertToString,
+            [ColumnType.Person] = ConvertToString,
+            [ColumnType.YesNo] = ConvertToYesNo,
+            [ColumnType.Hyperlink] = ConvertToString,
+            [ColumnType.Image] = ConvertToString,
             [ColumnType.Lookup] = value => value,
-
-            // Average Rating Column Type
-            [ColumnType.AverageRating] = value => value switch
-            {
-                double v => v,
-                string s when double.TryParse(s, out double ar) => ar,
-                _ => throw new ArgumentException("Invalid value for Average Rating column")
-            }
+            [ColumnType.AverageRating] = ConvertToAverageRating
         };
 
+        private static string ConvertToString(object value) => value?.ToString() ?? string.Empty;
+
+        private static object ConvertToNumber(object value) => value switch
+        {
+            double v => v,
+            string s when double.TryParse(s, out double d) => d,
+            _ => throw new ArgumentException("Invalid value for Number column")
+        };
+
+        private static object ConvertToDateTime(object value) => value switch
+        {
+            DateTime time => time,
+            string s when DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt) => dt,
+            _ => throw new ArgumentException("Invalid value for Date and Time column")
+        };
+
+        private static object ConvertToYesNo(object value) => value switch
+        {
+            bool v => v,
+            string s when bool.TryParse(s, out bool b) => b,
+            _ => throw new ArgumentException("Invalid value for Yes/No column")
+        };
+
+        private static object ConvertToAverageRating(object value) => value switch
+        {
+            double v => v,
+            string s when double.TryParse(s, out double ar) => ar,
+            _ => throw new ArgumentException("Invalid value for Average Rating column")
+        };
 
         public void SetValue(object value)
         {
