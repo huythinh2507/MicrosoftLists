@@ -566,20 +566,17 @@ namespace MicrosoftLists
             public void MoveRight()
             {
                 int index = ParentList.Columns.IndexOf(this);
-                if (index < ParentList.Columns.Count - 1)
-                {
-                    ParentList.MoveColumnRight(index);
-                }
+                int nextIndex = Math.Min(index + 1, ParentList.Columns.Count - 1);
+                ParentList.MoveColumnRight(nextIndex);
             }
 
             public void MoveLeft()
             {
                 int index = ParentList.Columns.IndexOf(this);
-                if (index > 0)
-                {
-                    ParentList.MoveColumnLeft(index);
-                }
+                int prevIndex = Math.Max(index - 1, 0);
+                ParentList.MoveColumnLeft(prevIndex);
             }
+
         }
 
         public enum ColumnType
@@ -730,6 +727,7 @@ namespace MicrosoftLists
 
         public class Choice
         {
+            public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
             public Color Color { get; set; }
         }
