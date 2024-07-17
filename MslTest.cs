@@ -630,52 +630,52 @@ namespace MicrosoftLists
                 Name = newName;
             }
 
-            public void MoveRight()
-            {
-                int index = ParentList.Columns.IndexOf(this);
-                ParentList.MoveColumnRight(index);
-            }
+             public void MoveRight()
+             {
+                 int index = ParentList.Columns.IndexOf(this);
+                 ParentList.MoveColumnRight(index);
+             }
 
-            public void MoveLeft()
-            {
-                int index = ParentList.Columns.IndexOf(this);
-                ParentList.MoveColumnLeft(index);
-            }
+           public void MoveLeft()
+{
+    int index = ParentList.Columns.IndexOf(this);
+    ParentList.MoveColumnLeft(index);
+}
 
-            public void AddCellValue(object value)
-            {
-                CellValues.Add(value);
-            }
+public void AddCellValue(object value)
+{
+    CellValues.Add(value);
+}
 
-            public void AtoZ()
-            {
-                var sortedValues = CellValues.OfType<string>()
-                                             .OrderBy(val => val, StringComparer.Ordinal)
-                                             .Cast<object>()
-                                             .ToList();
+public void AtoZ()
+{
+    var sortedValues = CellValues.OfType<string>()
+                                 .OrderBy(val => val, StringComparer.Ordinal)
+                                 .Cast<object>()
+                                 .ToList();
 
-                UpdateCellValues(sortedValues);
-            }
+    UpdateCellValues(sortedValues);
+}
 
-            public void ZtoA()
-            {
-                var sortedValues = CellValues.OfType<string>()
-                                             .OrderByDescending(val => val, StringComparer.Ordinal)
-                                             .Cast<object>()
-                                             .ToList();
+public void ZtoA()
+{
+    var sortedValues = CellValues.OfType<string>()
+                                 .OrderByDescending(val => val, StringComparer.Ordinal)
+                                 .Cast<object>()
+                                 .ToList();
 
-                UpdateCellValues(sortedValues);
-            }
+    UpdateCellValues(sortedValues);
+}
 
-            private void UpdateCellValues(List<object> sortedValues)
-            {
-                int sortedIndex = 0;
-                CellValues = CellValues.Select(val => val is string ? sortedValues[sortedIndex++] : val).ToList();
-            }
+private void UpdateCellValues(List<object> sortedValues)
+{
+    int sortedIndex = 0;
+    CellValues = CellValues.Select(val => val is string ? sortedValues[sortedIndex++] : val).ToList();
+}
 
 
 
-        }
+
 
         public enum ColumnType
         {
