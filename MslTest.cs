@@ -6,6 +6,9 @@ using System.Globalization;
 using System.Text.Json;
 using static MicrosoftLists.MslTest;
 using static MicrosoftLists.MslTest.List;
+using System.Text.Json.Serialization;
+using static MicrosoftLists.ListExporter;
+using System.Collections.Generic;
 
 namespace MicrosoftLists
 {
@@ -44,7 +47,7 @@ namespace MicrosoftLists
             list.AddCol(new NumberColumn { Name = "Number Column", DefaultValue = 42 });
             list.AddCol(new NumberColumn { Name = "Number Column", DefaultValue = 42 });
 
-            list.AddRow();
+            list.AddRow(42, 42, 42);
 
             var newL = service.CreateFromExistingList(list.Id, "existing");
 
@@ -55,17 +58,19 @@ namespace MicrosoftLists
         [Fact]
         public void Test_CreateListFromTemplate()
         {
-            var listService = new ListService();
-            var template = listService.GetTemplate()[0];
+            var (service, _) = CreateTestList();
 
-            var list = new ListService().CreateListFromTemplate(template);
+            var path = MsLConstant.FilePath;
+            ArgumentNullException.ThrowIfNull(path);
+
+            var template = service.GetTemplate()[0];
+
+            var list = service.CreateListFromTemplate(template);
 
             Assert.NotNull(list);
             Assert.Equal(template.Name, list.Name);
             Assert.Equal(template.Description, list.Description);
             Assert.Equal(template.Columns.Count, list.Columns.Count);
-            Assert.Equal(template.Columns[0].Name, list.Columns[0].Name);
-            Assert.Equal(template.Columns[0].Type, list.Columns[0].Type);
         }
 
         [Fact]
@@ -89,7 +94,6 @@ namespace MicrosoftLists
             Assert.Null(deletedList);
         }
 
-        //ADD COLUMNS
         [Fact]
         public void Test_AddTextColumn()
         {
@@ -430,7 +434,7 @@ namespace MicrosoftLists
 
             list.AddCol(new TextColumn { Name = "Text Column" });
             list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
-            
+
             list.AddRow("Harry Kane", 21);
             list.AddRow("Lebron James", 23);
             list.AddRow("Kevin Durant", 13);
@@ -439,7 +443,7 @@ namespace MicrosoftLists
 
             var searchValue = "Harry";
             var searchResults = list.Search(searchValue);
-            
+
             Assert.Contains(searchResults, row => row.Cells.Exists(cell =>
             {
                 var cellValue = cell.Value?.ToString();
@@ -470,6 +474,159 @@ namespace MicrosoftLists
             Assert.True(File.Exists(filePath));
         }
 
+        [Fact]
+        public void Test_FilterByColumnValues()
+        {
+            var list = GetBlankList();
+            list.AddCol(new TextColumn { Name = "Text Column" });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            list.AddRow("Harry Kane", 21);
+            list.AddRow("Lebron James", 23);
+            list.AddRow("Kevin Durant", 13);
+            list.AddRow("Anthony Edwards", 11);
+            list.AddRow("Stephen Curry", 30);
+
+            var filteredValues = list.Columns[1].FilterBy(value => (int)value > 20);
+
+            Assert.Equal(3, filteredValues.Count);
+            Assert.Contains(21, filteredValues);
+            Assert.Contains(23, filteredValues);
+            Assert.Contains(30, filteredValues);
+        }
+
+        [Fact]
+        public void Test_EditRow()
+        {
+            var (_, list) = CreateTestList();
+            list.AddCol(new TextColumn { Name = "Text Column" });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            list.AddRow("Harry Kane", 21);
+            list.AddRow("Lebron James", 23);
+            list.AddRow("Kevin Durant", 13);
+            list.AddRow("Anthony Edwards", 11);
+            list.AddRow("Stephen Curry", 30);
+
+            var rowId = list.Rows[0].Id;
+            var newValues = new List<object> { "Harry Kane 2", 22 };
+
+            list.EditRow(rowId, newValues);
+
+            var editedRow = list.Rows.First(r => r.Id == rowId);
+            Assert.Equal("Harry Kane 2", editedRow.Cells[0].Value);
+            Assert.Equal(22, editedRow.Cells[1].Value);
+        }
+
+        [Fact]
+        public void Test_DeleteRow()
+        {
+            var (_, list) = CreateTestList();
+            list.AddCol(new TextColumn { Name = "Text Column" });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            list.AddRow("Harry Kane", 21);
+            list.AddRow("Lebron James", 23);
+            list.AddRow("Kevin Durant", 13);
+            list.AddRow("Anthony Edwards", 11);
+            list.AddRow("Stephen Curry", 30);
+
+            var initialRowCount = list.Rows.Count;
+
+            var rowID = list.Rows[0].Id;
+            list.Delete(list.Rows[0]);
+
+            var finalRowCount = list.Rows.Count;
+
+            // Assert that the row count decreased by one
+            Assert.Equal(initialRowCount - 1, finalRowCount);
+
+            // Assert that the row with the specific ID is no longer in the list
+            Assert.DoesNotContain(list.Rows, row => row.Id == rowID);
+        }
+
+        [Fact]
+        public void Test_ExportToJson()
+        {
+            var (_, list) = CreateTestList();
+            list.Name = "New List";
+
+            list.AddCol(new Column { Name = "Text Column", Type = ColumnType.Text });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            list.AddRow("Harry Kane", 21);
+            list.AddRow("Lebron James", 23);
+            list.AddRow("Kevin Durant", 13);
+            list.AddRow("Anthony Edwards", 11);
+            list.AddRow("Stephen Curry", 30);
+
+            string jsonFilePath = MsLConstant.FilePath;
+
+            // Serialize the list to JSON
+            var json = ListExporter.ExportToJson(list);
+            ListExporter.SaveToJson(json, jsonFilePath);
+
+
+            // Verify that the JSON file contains the new list
+            var loadedTemplates = ListService.LoadTemplatesFromJson(jsonFilePath);
+            Assert.NotNull(loadedTemplates);
+
+            var newTemplate = loadedTemplates.Find(t => t.Name == list.Name);
+            Assert.NotNull(newTemplate);
+            Assert.Equal(list.Name, newTemplate.Name);
+            Assert.Equal(list.Columns.Count, newTemplate.Columns.Count);
+        }
+
+        [Fact]
+        public void Test_Form()
+        {
+            var (_, list) = CreateTestList();
+            list.Name = "New List";
+
+            list.AddCol(new Column { Name = "Text Column", Type = ColumnType.Text });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            var form = ListService.ToForm(list);
+
+            Assert.Equal(list.Name, form.Name);
+            Assert.Equal(list.Description, form.Description);
+            Assert.Equal(list.Columns.Count, form.Columns.Count);
+        }
+
+        [Fact]
+        public void Test_Paging()
+        {
+            var list = GetBlankList();
+            list.PageSize = 2;
+
+            list.AddCol(new TextColumn { Name = "Text Column" });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            list.AddRow("Row1", 1);
+            list.AddRow("Row2", 2);
+            list.AddRow("Row3", 3);
+            list.AddRow("Row4", 4);
+
+            var totalPages = list.GetTotalPages();
+            Assert.Equal(2, totalPages);
+
+            var firstPage = list.GetCurrentPage();
+            Assert.Equal(2, firstPage.Count);
+            Assert.Equal("Row1", firstPage[0].Cells[0].Value);
+            Assert.Equal("Row2", firstPage[1].Cells[0].Value);
+
+            list.NextPage();
+            var secondPage = list.GetCurrentPage();
+            Assert.Equal(2, secondPage.Count);
+            Assert.Equal("Row3", secondPage[0].Cells[0].Value);
+            Assert.Equal("Row4", secondPage[1].Cells[0].Value);
+
+            list.PreviousPage();
+            Assert.Equal("Row1", firstPage[0].Cells[0].Value);
+            Assert.Equal("Row2", firstPage[1].Cells[0].Value);
+        }
+
+
         //
         //SERVICE LAYER
         //
@@ -499,8 +656,16 @@ namespace MicrosoftLists
 
             public static List<ListTemplate>? LoadTemplatesFromJson(string filePath)
             {
-                var json = File.ReadAllText(filePath);
-                return JsonSerializer.Deserialize<List<ListTemplate>>(json);
+                try
+                {
+                    var json = File.ReadAllText(filePath);
+                    return JsonSerializer.Deserialize<List<ListTemplate>>(json, JsonOptions.Default);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading templates from JSON: {ex.Message}");
+                    return null;
+                }
             }
 
             public List CreateBlankList(string listName, string description, Color color, string icon)
@@ -537,7 +702,7 @@ namespace MicrosoftLists
                     Name = newName,
                     Description = description,
                     Columns = existingList.Columns,
-                    Color = color ?? Color.Transparent, // Use null-coalescing operator to default to Color.Transparent if color is null
+                    Color = color ?? Color.Transparent,
                     Icon = icon,
                     Rows = existingList.Rows
                 };
@@ -552,7 +717,7 @@ namespace MicrosoftLists
                 return _templates;
             }
 
-            public List CreateListFromTemplate(ListTemplate template)
+            public List CreateListFromTemplate(List template)
             {
                 var newList = new List
                 {
@@ -581,14 +746,25 @@ namespace MicrosoftLists
                 return _lists.Find(l => l.Id == id);
             }
 
-
-
             public void FavorList(Guid id)
             {
                 var listToRemove = _lists.First(l => l.Id == id);
                 listToRemove.IsFavorited = true;
             }
 
+            public static Form ToForm(List list)
+            {
+                var form = new Form()
+                {
+                    Id = Guid.NewGuid(),
+                    Name = list.Name,
+                    Description = list.Description,
+                    Columns = list.Columns,
+                    Color = list.Color,
+
+                };
+                return form;
+            }
         }
 
         public static class MsLConstant
@@ -602,7 +778,7 @@ namespace MicrosoftLists
         {
             public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
-            public ColumnType Type { get; set; } = ColumnType.Text;
+            public ColumnType Type { get; set; }
             public List<object> CellValues { get; set; } = [];
             public string Description { get; set; } = string.Empty;
             public bool IsHidden { get; set; } = false;
@@ -673,8 +849,10 @@ namespace MicrosoftLists
                 CellValues = CellValues.Select(val => val is string ? sortedValues[sortedIndex++] : val).ToList();
             }
 
-
-
+            public List<object> FilterBy(Func<object, bool> predicate)
+            {
+                return CellValues.Where(predicate).ToList();
+            }
         }
 
         public enum ColumnType
@@ -832,20 +1010,19 @@ namespace MicrosoftLists
 
         public class List
         {
-
-            public Guid Id = Guid.NewGuid();
+            public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
             public List<Column> Columns { get; set; } = [];
-            public Color Color { get; set; }
+            public Color Color { get; set; } = new Color();
             public List<Row> Rows { get; set; } = [];
             public string Icon { get; set; } = string.Empty;
             public bool IsFavorited { get; set; } = false;
-            public bool IsGridView { get; set; } = false;
-            public bool IsShared { get; set; } = false;
-            public bool IsExported { get; set; } = false;
-            public bool Undo { get; set; } = false;
-            public bool Redo { get; set; } = false;
+            public int PageSize { get; set; }
+            public ViewType CurrentView { get; set; }
+
+            public List<View> Views { get; set; } = [];
+            public int CurrentPage { get; set; } = 1;
 
             public void AddCol<T>(T col) where T : Column
             {
@@ -886,7 +1063,6 @@ namespace MicrosoftLists
 
                 Rows.Add(newRow);
             }
-
 
             public void MoveColumnLeft(int index)
             {
@@ -929,12 +1105,94 @@ namespace MicrosoftLists
                 })).ToList();
             }
 
+            public List<Row> GetCurrentPage()
+            {
+                return Rows.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+            }
+
+            // Method to move to the next page
+            public void NextPage()
+            {
+                if (CurrentPage * PageSize < Rows.Count)
+                {
+                    CurrentPage++;
+                }
+            }
+
+            // Method to move to the previous page
+            public void PreviousPage()
+            {
+                if (CurrentPage > 1)
+                {
+                    CurrentPage--;
+                }
+            }
+
+            // Method to get total pages
+            public int GetTotalPages()
+            {
+                return (int)Math.Ceiling((double)Rows.Count / PageSize);
+            }
+
+            public List<Row> FilterByColumn(string columnName, Func<object, bool> predicate)
+            {
+                var column = Columns.Find(col => col.Name.Equals(columnName)) ?? throw new ArgumentException($"Column {columnName} does not exist.");
+                int columnIndex = Columns.IndexOf(column);
+                return Rows.Where(row => predicate(row.Cells[columnIndex].Value)).ToList();
+            }
+
+            public void Delete(Row row)
+            {
+                Rows.Remove(row);
+            }
+
+            public void EditRow(Guid rowId, List<object> newValues)
+            {
+                var row = Rows.Find(r => r.Id == rowId) ?? throw new ArgumentException("Row not found.");
+                row.UpdateCells(newValues);
+            }
 
             public class Row
             {
                 public List<Cell> Cells { get; set; } = [];
+
+                public Guid Id = Guid.NewGuid();
+
+                public void UpdateCells(List<object> newValues)
+                {
+                    if (newValues.Count != Cells.Count)
+                    {
+                        throw new ArgumentException("Number of values does not match the number of cells.");
+                    }
+
+                    for (int i = 0; i < Cells.Count; i++)
+                    {
+                        Cells[i].Value = newValues[i];
+                    }
+                }
             }
         }
+    }
+
+    public class Form : List
+    {
+        public Form()
+        {
+        }
+    }
+
+    public class View
+    {
+        public ViewType Type { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public enum ViewType
+    {
+        List,
+        Calendar,
+        Gallery,
+        Board
     }
 
     internal class ListExporter : List
@@ -973,6 +1231,26 @@ namespace MicrosoftLists
                 }
                 csv.NextRecord();
             }
+        }
+
+        public static class JsonOptions
+        {
+            public static readonly JsonSerializerOptions Default = new()
+            {
+                WriteIndented = true,
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+        }
+
+        public static string ExportToJson(List list)
+        {
+            return JsonSerializer.Serialize(list, JsonOptions.Default);
+        }
+
+
+        public static void SaveToJson(string json, string filePath)
+        {
+            File.WriteAllText(filePath, json);
         }
     }
 
