@@ -1,50 +1,229 @@
 [
   {
-    "Name": "Template1",
-    "Description": "Template Description 1",
+    "Id": "3aaf45d7-8e4e-474f-a842-50b09fbbc9bd",
+    "Name": "Sample List",
+    "Description": "This is a sample list.",
+    "Color": {
+      "R": 255,
+      "G": 255,
+      "B": 255,
+      "A": 255
+    },
+    "Icon": "\uD83C\uDF1F",
+    "IsFavorited": false,
+    "PageSize": 0,
+    "CurrentView": 0,
+    "CurrentPage": 1,
     "Columns": [
       {
-        "Name": "Column1",
-        "Description": "",
-        "IsHidden": false
+        "Id": "8595c54b-d9e2-404e-8084-939fa57560c4",
+        "Name": "Text Column",
+        "Type": 0
       },
       {
-        "Name": "Column2",
-        "Description": "",
-        "IsHidden": false
+        "Id": "5174f430-3112-48a9-9884-9a16b3b0c6db",
+        "Name": "Number Column",
+        "Type": 1
       }
     ],
-    "Icon": "TemplateIcon1",
-    "Items": [],
-    "IsFavorited": false,
-    "IsGridView": false,
-    "IsShared": false,
-    "IsExported": false,
-    "Undo": false,
-    "Redo": false
+    "Rows": [
+      {
+        "Cells": [
+          { "Value": "Harry Kane" },
+          { "Value": 21 }
+        ]
+      },
+      {
+        "Cells": [
+          { "Value": "Lebron James" },
+          { "Value": 23 }
+        ]
+      },
+      {
+        "Cells": [
+          { "Value": "Kevin Durant" },
+          { "Value": 13 }
+        ]
+      },
+      {
+        "Cells": [
+          { "Value": "Anthony Edwards" },
+          { "Value": 11 }
+        ]
+      },
+      {
+        "Cells": [
+          { "Value": "Stephen Curry" },
+          { "Value": 30 }
+        ]
+      }
+    ]
   },
   {
-    "Name": "Template2",
-    "Description": "Template Description 2",
-    "Columns": [
-      {
-        "Name": "ColumnA",
-        "Description": "",
-        "IsHidden": false
-      },
-      {
-        "Name": "ColumnB",
-        "Description": "",
-        "IsHidden": false
-      }
-    ],
-    "Icon": "TemplateIcon2",
-    "Items": [],
+    "$id": "1",
+    "Id": "fe95c34a-fb50-4654-bad3-2d2bbbd4a79b",
+    "Name": "New List",
+    "Description": "Test Description",
+    "Columns": {
+      "$id": "2",
+      "$values": [
+        {
+          "$id": "3",
+          "Id": "2e2c97a2-ba03-4102-b142-b2a0e99ca6e7",
+          "Name": "Text Column",
+          "Type": 0,
+          "CellValues": {
+            "$id": "4",
+            "$values": [
+              "Harry Kane",
+              "Lebron James",
+              "Kevin Durant",
+              "Anthony Edwards",
+              "Stephen Curry"
+            ]
+          },
+          "Description": "",
+          "IsHidden": false,
+          "Width": 10,
+          "ParentList": {
+            "$ref": "1"
+          }
+        },
+        {
+          "$id": "5",
+          "Id": "0203d37b-215e-45d7-87b5-29e6fc7a70f4",
+          "Name": "Number Column",
+          "Type": 1,
+          "CellValues": {
+            "$id": "6",
+            "$values": [
+              21,
+              23,
+              13,
+              11,
+              30
+            ]
+          },
+          "Description": "",
+          "IsHidden": false,
+          "Width": 10,
+          "ParentList": {
+            "$ref": "1"
+          }
+        }
+      ]
+    },
+    "Color": {
+      "R": 255,
+      "G": 255,
+      "B": 255,
+      "A": 255,
+      "IsKnownColor": true,
+      "IsEmpty": false,
+      "IsNamedColor": true,
+      "IsSystemColor": false,
+      "Name": "White"
+    },
+    "Rows": {
+      "$id": "7",
+      "$values": [
+        {
+          "$id": "8",
+          "Cells": {
+            "$id": "9",
+            "$values": [
+              {
+                "$id": "10",
+                "Value": "Harry Kane",
+                "ColumnType": 0
+              },
+              {
+                "$id": "11",
+                "Value": 21,
+                "ColumnType": 1
+              }
+            ]
+          }
+        },
+        {
+          "$id": "12",
+          "Cells": {
+            "$id": "13",
+            "$values": [
+              {
+                "$id": "14",
+                "Value": "Lebron James",
+                "ColumnType": 0
+              },
+              {
+                "$id": "15",
+                "Value": 23,
+                "ColumnType": 1
+              }
+            ]
+          }
+        },
+        {
+          "$id": "16",
+          "Cells": {
+            "$id": "17",
+            "$values": [
+              {
+                "$id": "18",
+                "Value": "Kevin Durant",
+                "ColumnType": 0
+              },
+              {
+                "$id": "19",
+                "Value": 13,
+                "ColumnType": 1
+              }
+            ]
+          }
+        },
+        {
+          "$id": "20",
+          "Cells": {
+            "$id": "21",
+            "$values": [
+              {
+                "$id": "22",
+                "Value": "Anthony Edwards",
+                "ColumnType": 0
+              },
+              {
+                "$id": "23",
+                "Value": 11,
+                "ColumnType": 1
+              }
+            ]
+          }
+        },
+        {
+          "$id": "24",
+          "Cells": {
+            "$id": "25",
+            "$values": [
+              {
+                "$id": "26",
+                "Value": "Stephen Curry",
+                "ColumnType": 0
+              },
+              {
+                "$id": "27",
+                "Value": 30,
+                "ColumnType": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "Icon": "\uD83C\uDF1F",
     "IsFavorited": false,
-    "IsGridView": false,
-    "IsShared": false,
-    "IsExported": false,
-    "Undo": false,
-    "Redo": false
+    "PageSize": 0,
+    "CurrentView": 0,
+    "CurrentPage": 1
   }
+
 ]
