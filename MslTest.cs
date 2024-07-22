@@ -1,14 +1,12 @@
-﻿using CsvHelper.Configuration;
+using CsvHelper.Configuration;
 using CsvHelper;
 using System.Data;
 using System.Drawing;
 using System.Globalization;
 using System.Text.Json;
 using static MicrosoftLists.MslTest;
-using static MicrosoftLists.MslTest.List;
 using System.Text.Json.Serialization;
 using static MicrosoftLists.ListExporter;
-using System.Collections.Generic;
 
 namespace MicrosoftLists
 {
