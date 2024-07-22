@@ -1,12 +1,12 @@
-﻿using CsvHelper.Configuration;
+using CsvHelper.Configuration;
 using CsvHelper;
 using System.Data;
 using System.Drawing;
 using System.Globalization;
 using System.Text.Json;
 using static MicrosoftLists.MslTest;
-using static MicrosoftLists.MslTest.List;
 using System.Text.Json.Serialization;
+using static MicrosoftLists.ListExporter;
 
 namespace MicrosoftLists
 {
@@ -92,7 +92,6 @@ namespace MicrosoftLists
             Assert.Null(deletedList);
         }
 
-        //ADD COLUMNS
         [Fact]
         public void Test_AddTextColumn()
         {
@@ -433,7 +432,7 @@ namespace MicrosoftLists
 
             list.AddCol(new TextColumn { Name = "Text Column" });
             list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
-            
+
             list.AddRow("Harry Kane", 21);
             list.AddRow("Lebron James", 23);
             list.AddRow("Kevin Durant", 13);
@@ -442,7 +441,7 @@ namespace MicrosoftLists
 
             var searchValue = "Harry";
             var searchResults = list.Search(searchValue);
-            
+
             Assert.Contains(searchResults, row => row.Cells.Exists(cell =>
             {
                 var cellValue = cell.Value?.ToString();
@@ -565,7 +564,7 @@ namespace MicrosoftLists
             var json = ListExporter.ExportToJson(list);
             ListExporter.SaveToJson(json, jsonFilePath);
 
-             
+
             // Verify that the JSON file contains the new list
             var loadedTemplates = ListService.LoadTemplatesFromJson(jsonFilePath);
             Assert.NotNull(loadedTemplates);
@@ -577,16 +576,26 @@ namespace MicrosoftLists
         }
 
         [Fact]
-        public void Test_ImportFromCSV()
+        public void Test_Form()
         {
-            //
+            var (_, list) = CreateTestList();
+            list.Name = "New List";
+
+            list.AddCol(new Column { Name = "Text Column", Type = ColumnType.Text });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            var form = ListService.ToForm(list);
+
+            Assert.Equal(list.Name, form.Name);
+            Assert.Equal(list.Description, form.Description);
+            Assert.Equal(list.Columns.Count, form.Columns.Count);
         }
 
-            [Fact]
+        [Fact]
         public void Test_Paging()
         {
             var list = GetBlankList();
-            list.PageSize = 2; 
+            list.PageSize = 2;
 
             list.AddCol(new TextColumn { Name = "Text Column" });
             list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
@@ -615,20 +624,6 @@ namespace MicrosoftLists
             Assert.Equal("Row2", firstPage[1].Cells[0].Value);
         }
 
-        [Fact]
-        public void Test_View()
-        {
-            var list = GetBlankList();
-
-            list.SwitchView(ViewType.List);
-            Assert.Equal(ViewType.List, list.GetViewSettings());
-
-            list.SwitchView(ViewType.Grid);
-            Assert.Equal(ViewType.Grid, list.GetViewSettings());
-
-            list.SwitchView(ViewType.Card);
-            Assert.Equal(ViewType.Card, list.GetViewSettings());
-        }
 
         //
         //SERVICE LAYER
@@ -661,13 +656,8 @@ namespace MicrosoftLists
             {
                 try
                 {
-                    var options = new JsonSerializerOptions
-                    {
-                        ReferenceHandler = ReferenceHandler.Preserve
-                    };
-
                     var json = File.ReadAllText(filePath);
-                    return JsonSerializer.Deserialize<List<ListTemplate>>(json, options);
+                    return JsonSerializer.Deserialize<List<ListTemplate>>(json, JsonOptions.Default);
                 }
                 catch (Exception ex)
                 {
@@ -675,7 +665,6 @@ namespace MicrosoftLists
                     return null;
                 }
             }
-
 
             public List CreateBlankList(string listName, string description, Color color, string icon)
             {
@@ -711,7 +700,7 @@ namespace MicrosoftLists
                     Name = newName,
                     Description = description,
                     Columns = existingList.Columns,
-                    Color = color ?? Color.Transparent, 
+                    Color = color ?? Color.Transparent,
                     Icon = icon,
                     Rows = existingList.Rows
                 };
@@ -761,7 +750,19 @@ namespace MicrosoftLists
                 listToRemove.IsFavorited = true;
             }
 
-            
+            public static Form ToForm(List list)
+            {
+                var form = new Form()
+                {
+                    Id = Guid.NewGuid(),
+                    Name = list.Name,
+                    Description = list.Description,
+                    Columns = list.Columns,
+                    Color = list.Color,
+
+                };
+                return form;
+            }
         }
 
         public static class MsLConstant
@@ -775,7 +776,7 @@ namespace MicrosoftLists
         {
             public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
-            public ColumnType Type { get; set; } 
+            public ColumnType Type { get; set; }
             public List<object> CellValues { get; set; } = [];
             public string Description { get; set; } = string.Empty;
             public bool IsHidden { get; set; } = false;
@@ -803,56 +804,54 @@ namespace MicrosoftLists
                 Name = newName;
             }
 
-             public void MoveRight()
-             {
-                 int index = ParentList.Columns.IndexOf(this);
-                 ParentList.MoveColumnRight(index);
-             }
+            public void MoveRight()
+            {
+                int index = ParentList.Columns.IndexOf(this);
+                ParentList.MoveColumnRight(index);
+            }
 
-           public void MoveLeft()
-{
-    int index = ParentList.Columns.IndexOf(this);
-    ParentList.MoveColumnLeft(index);
-}
+            public void MoveLeft()
+            {
+                int index = ParentList.Columns.IndexOf(this);
+                ParentList.MoveColumnLeft(index);
+            }
 
-public void AddCellValue(object value)
-{
-    CellValues.Add(value);
-}
+            public void AddCellValue(object value)
+            {
+                CellValues.Add(value);
+            }
 
-public void AtoZ()
-{
-    var sortedValues = CellValues.OfType<string>()
-                                 .OrderBy(val => val, StringComparer.Ordinal)
-                                 .Cast<object>()
-                                 .ToList();
+            public void AtoZ()
+            {
+                var sortedValues = CellValues.OfType<string>()
+                                             .OrderBy(val => val, StringComparer.Ordinal)
+                                             .Cast<object>()
+                                             .ToList();
 
-    UpdateCellValues(sortedValues);
-}
+                UpdateCellValues(sortedValues);
+            }
 
-public void ZtoA()
-{
-    var sortedValues = CellValues.OfType<string>()
-                                 .OrderByDescending(val => val, StringComparer.Ordinal)
-                                 .Cast<object>()
-                                 .ToList();
+            public void ZtoA()
+            {
+                var sortedValues = CellValues.OfType<string>()
+                                             .OrderByDescending(val => val, StringComparer.Ordinal)
+                                             .Cast<object>()
+                                             .ToList();
 
-    UpdateCellValues(sortedValues);
-}
+                UpdateCellValues(sortedValues);
+            }
 
-private void UpdateCellValues(List<object> sortedValues)
-{
-    int sortedIndex = 0;
-    CellValues = CellValues.Select(val => val is string ? sortedValues[sortedIndex++] : val).ToList();
-}
+            private void UpdateCellValues(List<object> sortedValues)
+            {
+                int sortedIndex = 0;
+                CellValues = CellValues.Select(val => val is string ? sortedValues[sortedIndex++] : val).ToList();
+            }
 
-
-public List<object> FilterBy(Func<object, bool> predicate)
-{
-    return CellValues.Where(predicate).ToList();
-}
+            public List<object> FilterBy(Func<object, bool> predicate)
+            {
+                return CellValues.Where(predicate).ToList();
+            }
         }
-
 
         public enum ColumnType
         {
@@ -1009,7 +1008,6 @@ public List<object> FilterBy(Func<object, bool> predicate)
 
         public class List
         {
-
             public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
@@ -1020,6 +1018,8 @@ public List<object> FilterBy(Func<object, bool> predicate)
             public bool IsFavorited { get; set; } = false;
             public int PageSize { get; set; }
             public ViewType CurrentView { get; set; }
+
+            public List<View> Views { get; set; } = [];
             public int CurrentPage { get; set; } = 1;
 
             public void AddCol<T>(T col) where T : Column
@@ -1061,7 +1061,6 @@ public List<object> FilterBy(Func<object, bool> predicate)
 
                 Rows.Add(newRow);
             }
-
 
             public void MoveColumnLeft(int index)
             {
@@ -1133,16 +1132,6 @@ public List<object> FilterBy(Func<object, bool> predicate)
                 return (int)Math.Ceiling((double)Rows.Count / PageSize);
             }
 
-            public void SwitchView(ViewType viewType)
-            {
-                CurrentView = viewType;
-            }
-
-            public ViewType GetViewSettings()
-            {
-                return CurrentView;
-            }
-
             public List<Row> FilterByColumn(string columnName, Func<object, bool> predicate)
             {
                 var column = Columns.Find(col => col.Name.Equals(columnName)) ?? throw new ArgumentException($"Column {columnName} does not exist.");
@@ -1183,13 +1172,25 @@ public List<object> FilterBy(Func<object, bool> predicate)
         }
     }
 
-   
+    public class Form : List
+    {
+        public Form()
+        {
+        }
+    }
+
+    public class View
+    {
+        public ViewType Type { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
 
     public enum ViewType
     {
-        Grid,
         List,
-        Card
+        Calendar,
+        Gallery,
+        Board
     }
 
     internal class ListExporter : List
@@ -1229,18 +1230,21 @@ public List<object> FilterBy(Func<object, bool> predicate)
                 csv.NextRecord();
             }
         }
-      
-        public static string ExportToJson(List list)
+
+        public static class JsonOptions
         {
-            var options = new JsonSerializerOptions
+            public static readonly JsonSerializerOptions Default = new()
             {
                 WriteIndented = true,
                 ReferenceHandler = ReferenceHandler.Preserve
             };
-
-
-            return JsonSerializer.Serialize(list, options);
         }
+
+        public static string ExportToJson(List list)
+        {
+            return JsonSerializer.Serialize(list, JsonOptions.Default);
+        }
+
 
         public static void SaveToJson(string json, string filePath)
         {
