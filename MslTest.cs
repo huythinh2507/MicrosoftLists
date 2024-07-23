@@ -5,10 +5,8 @@ using System.Drawing;
 using System.Globalization;
 using System.Text.Json;
 using static MicrosoftLists.MslTest;
-using static MicrosoftLists.MslTest.List;
 using System.Text.Json.Serialization;
 using static MicrosoftLists.ListExporter;
-using System.Collections.Generic;
 
 namespace MicrosoftLists
 {
@@ -594,6 +592,23 @@ namespace MicrosoftLists
         }
 
         [Fact]
+        public void Test_SubmitForm()
+        {
+            var (_, list) = CreateTestList();
+            list.Name = "New List";
+
+            list.AddCol(new Column { Name = "Text Column", Type = ColumnType.Text });
+            list.AddCol(new Column { Name = "Number Column", Type = ColumnType.Number });
+
+            var form = ListService.ToForm(list);
+            form.AddRow("Harry", 2);
+
+            Assert.Equal(list.Name, form.Name);
+            Assert.Equal(list.Description, form.Description);
+            Assert.Equal(list.Columns.Count, form.Columns.Count);
+        }
+
+        [Fact]
         public void Test_Paging()
         {
             var list = GetBlankList();
@@ -626,6 +641,48 @@ namespace MicrosoftLists
             Assert.Equal("Row2", firstPage[1].Cells[0].Value);
         }
 
+        [Fact]
+        public void Test_AddUser()
+        {
+            var list = new List();
+            var user = new User { Name = "testUser" };
+
+            list.AddAccess(user);
+
+            Assert.True(list.HasAccess(user));
+        }
+
+        [Fact]
+        public void Test_RemoveUser()
+        {
+            var list = new List();
+            var user = new User { Name = "testUser" };
+
+            list.AddAccess(user);
+
+            Assert.True(list.HasAccess(user));
+
+            list.RemoveAccess(user);
+            Assert.False(list.HasAccess(user));
+        }
+
+        [Fact]
+        public void Test_UserCannotBeAddedTwice()
+        {
+            var list = new List();
+            var user = new User { Name = "testUser" };
+
+            list.AddAccess(user);
+            list.AddAccess(user);
+
+            Assert.Single(list.GetUsers().FindAll(u => u.Name == user.Name));
+        }
+
+      
+
+       
+
+        
 
         //
         //SERVICE LAYER
@@ -761,7 +818,7 @@ namespace MicrosoftLists
                     Description = list.Description,
                     Columns = list.Columns,
                     Color = list.Color,
-
+                    Rows = list.Rows,
                 };
                 return form;
             }
@@ -1010,6 +1067,17 @@ namespace MicrosoftLists
 
         public class List
         {
+            private static User GetAdmin()
+            {
+                var admin = new User()
+                {
+                    Name = "Admin",
+                    IsOwner = true
+                };
+                return admin;
+            }
+
+            private readonly List<User> accessList = [];
             public Guid Id { get; set; } = Guid.NewGuid();
             public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
@@ -1020,9 +1088,9 @@ namespace MicrosoftLists
             public bool IsFavorited { get; set; } = false;
             public int PageSize { get; set; }
             public ViewType CurrentView { get; set; }
-
             public List<View> Views { get; set; } = [];
             public int CurrentPage { get; set; } = 1;
+            public User Owner { get; private set; } = GetAdmin();
 
             public void AddCol<T>(T col) where T : Column
             {
@@ -1036,6 +1104,15 @@ namespace MicrosoftLists
                     {
                         row.Cells.Add(new Cell());
                     }
+                }
+            }
+
+            public void SetOwner(User owner)
+            {
+                if (Owner == null)
+                {
+                    Owner = owner;
+                    accessList.Add(owner); // Owner has access by default
                 }
             }
 
@@ -1152,6 +1229,30 @@ namespace MicrosoftLists
                 row.UpdateCells(newValues);
             }
 
+            public void AddAccess(User user)
+            {
+                if (accessList.Contains(user))
+                {
+                    return;
+                }
+                accessList.Add(user);
+            }
+
+            public bool HasAccess(User user)
+            {
+                return accessList.Contains(user);
+            }
+
+            public void RemoveAccess(User user)
+            {
+                accessList.Remove(user);
+            }
+
+            public List<User> GetUsers()
+            {
+                return accessList;
+            }
+
             public class Row
             {
                 public List<Cell> Cells { get; set; } = [];
@@ -1172,6 +1273,14 @@ namespace MicrosoftLists
                 }
             }
         }
+    }
+
+    public class User 
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string Name { get; set; } = string.Empty;
+        public bool IsOwner { get; internal set; } = false;
+        
     }
 
     public class Form : List
