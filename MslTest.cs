@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+
 using System.Drawing;
 using System.Net.Http.Json;
 using System.Text.Json;
